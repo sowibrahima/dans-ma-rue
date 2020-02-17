@@ -9,6 +9,12 @@ async function run () {
     const client = new Client({ node: config.get('elasticsearch.uri') });
 
     // TODO il y a peut être des choses à faire ici avant de commencer ... 
+    // Création de l'indice
+    client.indices.create({ index: 'imdb' }, (err, resp) => {
+        if (err) console.trace(err.message);
+    });
+
+    let anomalies = [];
 
     // Read CSV file
     fs.createReadStream('dataset/dans-ma-rue.csv')
