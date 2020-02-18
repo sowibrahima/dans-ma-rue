@@ -6,21 +6,32 @@ const indexName = config.get('elasticsearch.index_name');
 
 async function run () {
     // Create Elasticsearch client
-    const client = new Client({ node: config.get('elasticsearch.uri') });
-
-    // TODO il y a peut être des choses à faire ici avant de commencer ... 
-    // Création de l'indice
-    client.indices.create({ index: indexName }, (err, resp) => {
-        if (err) console.trace(err.message);
+    const client = new Client({ 
+        node: config.get('elasticsearch.uri'), 
+        requestTimeout: 600000 
     });
 
+    // Creer mapping
+    client.indices.create({
+        index: indexName,
+        body: {
+            "mappings": {
+                "properties": {
+                    "location": {
+                        "type": "geo_point"
+                    }
+                }
+            }
+        }
+    }, function (err, resp, respcode) {
+        console.log("Response", resp);
+    });
   
-    for (var anomalies=[]; anomalies.push([])<172;);
-
-
+   
     // Read CSV file
     let line_index = 0;
-    let array_index = 0;
+    let anomalies=[]
+    let promises = [];
 
 
     fs.createReadStream('dataset/dans-ma-rue.csv')
@@ -30,12 +41,29 @@ async function run () {
         .on('data', (data) => {
 
             // Increment sub array index
-            if(line_index%5000 === 0 && line_index!=0){
-                array_index++;
-                console.log("5k lines inserted, current index is", line_index);
+            if(line_index%10000===0 && line_index!=0){
+                // Copy array
+                const anomaliesDuplicate = [...anomalies];
+                
+                // Empty array
+                anomalies.length = 0;
+
+                promises.push(new Promise((resolve, reject) => {
+                    client.bulk(createBulkInsertQuery(anomaliesDuplicate), (err, resp) => {
+                        if (err){
+                            console.trace(err.message);
+                            reject();
+                        }
+                            
+                        else {
+                            console.log(`Inserted ${resp.body.items.length} anomalies`);
+                            resolve();
+                        }
+                    })
+                }));
             }
 
-            anomalies[array_index].push({
+            anomalies.push({
                 '@timestamp' : data["DATEDECL"],
                 object_id : data["OBJECTID"],
                 annee_declaration : data["ANNEE DECLARATION"],
@@ -55,16 +83,18 @@ async function run () {
             line_index++;
         })
         .on('end', () => {
-            // TODO il y a peut être des choses à faire à la fin aussi ?
-            for(let anomalyArray of anomalies){
-                client.bulk(createBulkInsertQuery(anomalyArray), (err, resp) => {
-                    if (err) 
+            // Make last insert
+            Promise.all(promises).then(() => {
+                client.bulk(createBulkInsertQuery(anomalies), (err, resp) => {
+                    if (err)
                         console.trace(err.message);
-                    else 
+                    else
                         console.log(`Inserted ${resp.body.items.length} anomalies`);
-                  });
-            }
-            //console.log('Terminated!');
+
+                    console.log("Closing connection");
+                    client.close();
+                })
+            });
         });
 
         function createBulkInsertQuery(anoms) {
@@ -82,10 +112,3 @@ async function run () {
 }
 
 run().catch(console.error);
-
-
-[
-    [], // 50k
-    [], // 50k
-    [] // 50k
-]
