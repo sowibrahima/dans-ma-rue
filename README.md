@@ -1,3 +1,7 @@
+# Members
+* Teng YU
+* Ibrahima SOW
+
 # Dans Ma Rue
 
 L'objectif de cet exerice est d'analyser les données de l'application mobile `DansMaRue - Paris` avec `Elasticsearch`.
