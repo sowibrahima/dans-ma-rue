@@ -397,7 +397,7 @@ Dans Kibana, créez un dashboard qui permet de visualiser :
 
 Faites une capture d'écran du dashboard et ajoutez le au dépôt afin qu'il soit visible dans ce readme :
 
-![](https://via.placeholder.com/800x600.png?text=Votre+Dashboard+Ici)
+![](https://github.com/sowibrahima/dans-ma-rue/blob/master/dashboard.jpg?raw=true)
 
 ## Pour rendre le travail
 
